@@ -4,3 +4,4 @@ venv/
 
 src/token.txt
 src/server_id.txt
+src/config.json
