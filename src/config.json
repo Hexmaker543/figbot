@@ -1,0 +1,73 @@
+{
+    "banned_words": [
+        "nigger",
+        "nigga",
+        "nlgger",
+        "ngger",
+        "hitler did nothing wrong",
+        "faggot",
+        "fag",
+        "fggot",
+        "zipperhead",
+        "foid",
+        "femoid"
+    ], 
+    "users": {
+        "lukas372": 1382075655381844108
+    },
+    "dionysus theme": {
+        "red": 890606
+    },
+    "commands": {
+        "verify": {
+            "count": 0,
+            "category": {},
+            "channel": {}
+        }
+    },
+    "roles": {
+        "grouped permissions": {
+        },
+        "basic": {
+            "Verified": {
+                "color": null,
+                "hoist": false,
+                "mentionable": false,
+                "permissions": [
+                    "create_instant_invite",
+                    "add_reactions",
+                    "stream",
+                    "read_messages",
+                    "view_channel",
+                    "send_messages",
+                    "embed_links",
+                    "attach_files",
+                    "read_message_history",
+                    "mention_everyone",
+                    "external_emojis",
+                    "connect",
+                    "speak",
+                    "use_voice_activation",
+                    "change_nickname",
+                    "use_application_commands",
+                    "request_to_speak",
+                    "create_public_threads",
+                    "send_messages_in_threads",
+                    "external_stickers",
+                    "use_embedded_activities",
+                    "use_soundboard",
+                    "use_external_sounds",
+                    "send_voice_messages",
+                    "set_voice_channel_status",
+                    "use_external_apps"
+                ]
+            },
+            "Rules Reader": {
+                "color": null,
+                "hoist": false,
+                "mentionable": false,
+                "permissions": []
+            }
+        }
+    }
+}

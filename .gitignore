@@ -1,0 +1,6 @@
+__pychache__/
+venv/
+*.pyc
+
+src/token.txt
+src/server_id.txt
