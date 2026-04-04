@@ -544,13 +544,45 @@ async def accept_ticket(interaction:discord.Interaction):
     await interaction.followup.send(
         "Added 'Verified' role to user.")
 
-    await close_ticket(interaction.channel)
+    await close_ticket(interaction.channel, 'accepted')
 
     # deny command
+@verify_group.command(
+    name='deny',
+    description='Deny this ticket.')
+@app_commands.checks.has_permissions(**verify_command_permissions)
+async def deny_ticket(interaction:discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
 
+    if interaction.guild is None:
+        await interaction.followup.send("This command cannot be used in DMs")
 
-async def close_ticket(channel:discord.TextChannel):
-    pass
+    if not isinstance(interaction.channel, discord.TextChannel):
+        await interaction.followup.send("Channel must be a text channel")
+        return
+
+    await close_ticket(interaction.channel, 'denied')
+
+    if client.user is None:
+        await interaction.followup.send("Error. No client user")
+        return
+
+    for member in interaction.channel.members:
+        if client.user.id == member.id: continue
+        if member.guild_permissions.administrator: continue
+        await member.ban(reason='Failed to verify')
+
+async def close_ticket(channel:discord.TextChannel, verdict:str):
+    messages = []
+    async for msg in channel.history(limit=None):
+        messages.append(f'[{msg.created_at}]')
+        messages.append(f'{msg.author}: {msg.content}')
+        messages.append('')
+
+    with open(f'../assets/verification_logs/{verdict}_{channel.name}.txt') as f:
+        f.writelines(messages)
+
+    await channel.delete()
 
 
 client.run(token)
