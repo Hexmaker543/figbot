@@ -184,7 +184,7 @@ class Verify_Button(discord.ui.View):
             return
 
         channel_name=(
-                f'verification-ticket-{command_data['verify']['count']}')
+                f"verification-ticket-{command_data['verify']['count']}")
         verified_role = discord.utils.get(
             interaction.guild.roles, name='Verified')
 
@@ -435,9 +435,7 @@ async def send_embed():
 
     embed_channel = client.get_channel(
         command_data['verify']['channel'])
-    if not isinstance(embed_channel, discord.TextChannel): 
-        print(f"embed_channel is type {type(embed_channel)}")
-        return
+    if not isinstance(embed_channel, discord.TextChannel): return
 
     await embed_channel.purge()
     await embed_channel.send(view=Verify_Button(), embed=embed)
