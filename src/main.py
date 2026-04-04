@@ -1,3 +1,4 @@
+from enum import verify
 import discord
 import json
 import webcolors
@@ -411,7 +412,7 @@ verify_group = app_commands.Group(
     name='verify',
     description="Commands to setup and complete the verification process.")
 client.tree.add_command(verify_group, guild=GUILD)
-verify_command_permissions = {"send_messages": True}
+verify_command_permissions = {"administrator": True}
 
     # embed
 async def send_embed():
@@ -444,9 +445,7 @@ async def send_embed():
 @verify_group.command(
     name='embed',
     description='Send an embed with a verify button to the current channel')
-@app_commands.checks.has_permissions(
-        **verify_command_permissions,
-        administrator=True)
+@app_commands.checks.has_permissions(**verify_command_permissions)
 async def set_embed(interaction:discord.Interaction):
 
     if interaction.guild is None:
@@ -483,9 +482,7 @@ async def set_embed(interaction:discord.Interaction):
 @verify_group.command(
     name='category',
     description='Set a category to create verification tickets in')
-@app_commands.checks.has_permissions(
-    **verify_command_permissions,
-    administrator=True)
+@app_commands.checks.has_permissions(**verify_command_permissions)
 @app_commands.describe(
     category_name = 'Name of the category where tickets will be created')
 async def set_category(interaction:discord.Interaction, category_name:str):
@@ -509,6 +506,51 @@ async def set_category(interaction:discord.Interaction, category_name:str):
     save_commands()
 
     await interaction.followup.send("Category set.")
+
+    # accept command
+@verify_group.command(
+    name='accept',
+    description='Accept this ticket.')
+@app_commands.checks.has_permissions(**verify_command_permissions)
+async def accept_ticket(interaction:discord.Interaction):
+
+    await interaction.response.defer(ephemeral=True)
+
+    if interaction.guild is None:
+        await interaction.followup.send("This command cannot be used in DMs")
+        return
+
+    if not isinstance(interaction.channel, discord.TextChannel):
+        await interaction.followup.send(
+            "This command must be used in a text channel")
+        return
+
+    if client.user is None:
+        await interaction.followup.send("Error, no client user.")
+        return
+
+    verified_role = discord.utils.get(
+        interaction.guild.roles, name="Verified")
+
+    if verified_role is None:
+        await interaction.followup.send("No verified role.")
+        return
+
+    for member in interaction.channel.members:
+        if client.user.id == member.id: continue
+        if member.guild_permissions.administrator: continue
+        await member.add_roles(verified_role)
+
+    await interaction.followup.send(
+        "Added 'Verified' role to user.")
+
+    await close_ticket(interaction.channel)
+
+    # deny command
+
+
+async def close_ticket(channel:discord.TextChannel):
+    pass
 
 
 client.run(token)
