@@ -43,7 +43,7 @@ def load_config():
         with open(config_filepath, 'r') as f: 
             global config
             config = json.load(f)
-            print('Config Loaded\n')
+            print('Config Loaded')
     except FileNotFoundError: 
         print(f"Config file '{config_filepath}' could not be loaded, ensure"+
               "file exists and try again. \n")
