@@ -84,6 +84,7 @@ class Client(commands.Bot):
 
         guild = self.get_guild(GUILD.id)
         await self.create_roles(guild=guild)
+        await self.sync_commands()
 
         await send_embed()
 
