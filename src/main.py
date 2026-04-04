@@ -1,4 +1,3 @@
-from enum import verify
 import discord
 import json
 import webcolors
