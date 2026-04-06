@@ -1,9 +1,3 @@
 __pychache__/
 venv/
 *.pyc
-
-src/token.txt
-src/server_id.txt
-src/config.json
-src/commands.json
-

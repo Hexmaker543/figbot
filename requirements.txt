@@ -8,5 +8,4 @@ idna==3.11
 multidict==6.7.1
 propcache==0.4.1
 typing_extensions==4.15.0
-webcolors==25.10.0
 yarl==1.23.0
