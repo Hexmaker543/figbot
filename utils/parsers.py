@@ -2,16 +2,17 @@ import discord
 from typing import Literal
 
 
-async def get_role_anchor(
-    interaction:discord.Interaction,
-    anchor_position:Literal["top", "bottom"]):
+def get_role_anchor(
+    guild:discord.Guild,
+    anchor_position:Literal["top", "bottom"]) -> discord.Role:
+    """Get the role at either the top or bottom of guild role list"""
 
     if anchor_position.lower() not in ('top', 'bottom'):
         raise ValueError(f"Invalid anchor position: {anchor_position}")
 
     if anchor_position.lower() == 'top':
-        anchor = interaction.guild.roles[-1]
+        anchor = guild.roles[-1]
     elif anchor_position.lower() == 'bottom':
-        anchor = interaction.guild.roles[0]
+        anchor = guild.roles[0]
 
     return anchor

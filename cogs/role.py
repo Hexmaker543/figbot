@@ -5,6 +5,7 @@ from discord.ext import commands
 from typing import Literal
 
 from utils.decorators import require_guild
+from utils.parsers import get_role_anchor from utils.role import create_roles_from_list, place_roles_below_anchor
 
 
 class Role(commands.Cog):
@@ -40,24 +41,26 @@ class Role(commands.Cog):
         names: list[str],
         anchor_role: discord.Role = None,
         anchor_position: Literal["top", "bottom"] = None):
+        """
+        Slash command that allows the user to create roles from a list of
+        role names
+        """
+
+        await interaction.response.defer(ephemeral=True)
 
         if anchor_position and anchor_role:
             await interaction.followup.send("Cannot have 2 anchors.")
             return
 
-        if anchor_role:
-            anchor = discord.utils.get(
-                interaction.guild.roles,
-                name=anchor_role)
-            if anchor is None:
-                await interaction.followup.send(
-                    f"{anchor_role} is not a valid anchor role.")
-                return
-        elif anchor_position:
-            if anchor_position.lower() == 'top':
-            elif anchor_position.lower() == 'bottom':
-            else:
-                await interaction.followup.send(
-                    f"{anchor_position} is not a valid anchor position. "+
-                    "Valid anchor positions are 'top' and 'bottom'")
-                return
+        try: anchor = get_role_anchor(interaction.guild, anchor_position)
+        except ValueError as e: 
+            await interaction.followup.send(e) ; return
+
+        created_roles = await create_roles_from_list(interaction.guild, names)
+        if created_roles is None:
+            await interaction.followup.send(
+                "Error. No roles created.")
+            return
+
+        await place_roles_below_anchor(
+            interaction.guild, anchor, created_roles)
