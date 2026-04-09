@@ -4,8 +4,6 @@ from os import getenv
 from sys import exit
 from dotenv import load_dotenv
 
-import cogs.role
-
 
 load_dotenv()
 try:
@@ -15,6 +13,11 @@ except Exception as e:
     print(e)
     exit()
 
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.guilds = True
+intents.members = True
 
 class Bot(commands.Bot):
     def __init__(self):
@@ -30,7 +33,7 @@ class Bot(commands.Bot):
             await self.tree.sync(guild=discord.Object(id=SERVER_ID)))
         print(
             f"{command_count} command{
-            's' if command_count > 1 else ''} synced")
+            's' if command_count == 1 else ''} synced")
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
@@ -38,9 +41,6 @@ class Bot(commands.Bot):
 
     async def on_message(self, message):
         pass
-
-intents = discord.Intents.default()
-intents.message_content = True
 
 
 bot = Bot()
