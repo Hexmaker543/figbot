@@ -47,11 +47,11 @@ class Role(commands.Cog):
         role names
         """
 
+        await interaction.response.defer(ephemeral=True)
+
         try: names = get_comma_list(names)
         except ValueError as e:
-            await interaction.followup.send("Invalid list of commands.")
-
-        await interaction.response.defer(ephemeral=True)
+            await interaction.followup.send(f"Invalid list of commands. [{e}]")
 
         if anchor_position and anchor_role:
             await interaction.followup.send("Cannot have 2 anchors.")
