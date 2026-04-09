@@ -16,3 +16,6 @@ def get_role_anchor(
         anchor = guild.roles[0]
 
     return anchor
+
+def get_comma_list(list_string: str):
+    return [item.strip() for item in list_string.split('.')]

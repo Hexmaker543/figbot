@@ -4,6 +4,8 @@ from os import getenv
 from sys import exit
 from dotenv import load_dotenv
 
+import cogs.role
+
 
 load_dotenv()
 try:
@@ -21,6 +23,9 @@ class Bot(commands.Bot):
             intents=intents)
 
     async def setup_hook(self):
+
+        await self.load_extension("cogs.role")
+
         command_count = len(
             await self.tree.sync(guild=discord.Object(id=SERVER_ID)))
         print(

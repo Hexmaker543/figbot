@@ -5,11 +5,12 @@ from discord.ext import commands
 from typing import Literal
 
 from utils.decorators import require_guild
-from utils.parsers import get_role_anchor from utils.role import create_roles_from_list, place_roles_below_anchor
+from utils.parsers import get_comma_list, get_role_anchor 
+from utils.role import create_roles_from_list, place_roles_below_anchor
 
 
 class Role(commands.Cog):
-    PERMS = { 'administrator'  : True }
+    PERMS = { 'administrator' : True }
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -38,13 +39,17 @@ class Role(commands.Cog):
     async def create_fromlist(
         self,
         interaction: discord.Interaction,
-        names: list[str],
+        names: str,
         anchor_role: discord.Role = None,
         anchor_position: Literal["top", "bottom"] = None):
         """
         Slash command that allows the user to create roles from a list of
         role names
         """
+
+        try: names = get_comma_list(names)
+        except ValueError as e:
+            await interaction.followup.send("Invalid list of commands.")
 
         await interaction.response.defer(ephemeral=True)
 
