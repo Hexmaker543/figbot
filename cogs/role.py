@@ -19,12 +19,14 @@ class Role(commands.Cog):
         description='Commands to manage roles',
         default_permissions=discord.Permissions(administrator=True))
 
+    # role create command tree
     create = app_commands.Group(
         name='create', 
         description='Commands to create one or more roles')
 
     role.add_command(create)
 
+        # create fromlist command
     @create.command(
         name='fromlist',
         description='Create one or more roles from a list of names')
@@ -34,6 +36,7 @@ class Role(commands.Cog):
                       "roles under",
         anchor_position= "(Optional) Specify whether to place the new roles "+
                          "under or above all other existing roles")
+    @app_commands.guild_only
     async def create_fromlist(
         self,
         interaction: discord.Interaction,
@@ -61,6 +64,7 @@ class Role(commands.Cog):
             try: anchor = get_role_anchor(interaction.guild, anchor_position)
             except ValueError as e: 
                 await interaction.followup.send(e) ; return
+
         elif anchor_role:
             anchor = discord.utils.get(
                 interaction.guild.roles,
@@ -80,6 +84,15 @@ class Role(commands.Cog):
                 interaction.guild, anchor, created_roles)
 
         await interaction.followup.send(f"{len(created_roles)} Roles created.")
+
+    # role list command
+    @role.command(
+        name='list',
+        description="Show a list of all roles in this server")
+    @app_commands.guild_only
+    async def list_roles(interaction:discord.Interaction):
+        pass
+
 
 async def setup(bot):
     await bot.add_cog(Role(bot))
