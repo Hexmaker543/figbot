@@ -4,7 +4,6 @@ from discord.ext import commands
 
 from typing import Literal
 
-from credentials import SERVER_ID
 from utils.parsers import get_comma_list, get_role_anchor 
 from utils.role import create_roles_from_list, place_roles_below_anchor
 
@@ -18,8 +17,7 @@ class Role(commands.Cog):
     role = app_commands.Group(
         name='role', 
         description='Commands to manage roles',
-        guild_ids=[SERVER_ID],
-            default_permissions=discord.Permissions(administrator=True))
+        default_permissions=discord.Permissions(administrator=True))
 
     create = app_commands.Group(
         name='create', 
@@ -81,7 +79,7 @@ class Role(commands.Cog):
             await place_roles_below_anchor(
                 interaction.guild, anchor, created_roles)
 
-        interaction.followup.send(f"{len(created_roles)}Roles created.")
+        await interaction.followup.send(f"{len(created_roles)} Roles created.")
 
 async def setup(bot):
     await bot.add_cog(Role(bot))
