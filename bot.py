@@ -19,11 +19,9 @@ class Bot(commands.Bot):
 
         await self.load_extension("cogs.role")
 
-        command_count = len(
-            await self.tree.sync())
-        print(
-            f"{command_count} command{
-            's' if command_count == 1 else ''} synced")
+        command_count = len(await self.tree.sync())
+        suffix = 's' if command_count == 1 else ''
+        print(f"{command_count} command{suffix} synced")
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")

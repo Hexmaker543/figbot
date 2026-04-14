@@ -85,13 +85,13 @@ class Role(commands.Cog):
 
         await interaction.followup.send(f"{len(created_roles)} Roles created.")
 
-    # role list command
-    @role.command(
-        name='list',
-        description="Show a list of all roles in this server")
-    @app_commands.guild_only
-    async def list_roles(interaction:discord.Interaction):
-        pass
+    # # role list command
+    # @role.command(
+    #     name='list',
+    #     description="Show a list of all roles in this server")
+    # @app_commands.guild_only
+    # async def list_roles(interaction:discord.Interaction):
+    #     pass
 
 
 async def setup(bot):
