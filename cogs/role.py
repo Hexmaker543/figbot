@@ -4,8 +4,9 @@ from discord.ext import commands
 
 from typing import Literal
 
-from utils.parsers import get_comma_list, get_role_anchor 
-from utils.role import create_roles_from_list, place_roles_below_anchor
+from utils.parsers import get_comma_list
+from utils.role import (
+    create_roles_from_list, place_roles_below_anchor, get_role_anchor)
 
 
 class Role(commands.Cog):

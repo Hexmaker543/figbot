@@ -18,6 +18,7 @@ class Bot(commands.Bot):
     async def setup_hook(self):
 
         await self.load_extension("cogs.role")
+        await self.load_extension("cogs.color")
 
         command_count = len(await self.tree.sync())
         suffix = 's' if command_count == 1 else ''
