@@ -2,6 +2,9 @@ import discord
 
 from dataclasses import dataclass
 
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+
 from config import SWATCH_SETTINGS
 
 
@@ -17,3 +20,5 @@ class SwatchesConfig:
 class Swatches:
     def __init__(self, color_dict:dict[str, tuple[int, int, int]]):
         self.config = SwatchesConfig(**SWATCH_SETTINGS)
+
+        pass

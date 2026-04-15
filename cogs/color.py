@@ -67,11 +67,21 @@ class Color(commands.Cog):
     @app_commands.guild_only
     async def list_colors(interaction:discord.Interaction):
 
+        await interaction.response.defer(ephemeral=True)
+
         color_dict: dict[str, tuple[int, int, int]] = {}
         for name in webcolors.names(spec='css3'):
             color_dict[name] = tuple(webcolors.name_to_rgb(name=name))
 
-        swatches = Swatches(color_dict)
+        try:
+            swatches = Swatches(color_dict)
+            swatches.send(interaction)
+        except Exception as e:
+            await interaction.followup.send(f"Error: {e}")
+            return
+
+        msg = await interaction.followup.send("")
+        await msg.delete()
 
 
 async def setup(bot):
