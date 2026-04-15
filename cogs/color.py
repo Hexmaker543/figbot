@@ -69,8 +69,7 @@ class Color(commands.Cog):
 
         color_dict: dict[str, tuple[int, int, int]] = {}
         for name in webcolors.names(spec='css3'):
-            r, g, b = webcolors.name_to_rgb(name=name)
-            color_dict[name] = (r, g, b)
+            color_dict[name] = tuple(webcolors.name_to_rgb(name=name))
 
         swatches = Swatches(color_dict)
 
