@@ -10,5 +10,5 @@ SWATCH_SETTINGS = {
     # Separates lines of text based off height of text
     # multiplied by this value
     "line_spacing": 1.5,
-    "word_spacing": 3 # How many spaces should be printed between each word
+    "word_spacing": 2 # How many spaces should be printed between each word
 }
