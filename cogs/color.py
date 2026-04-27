@@ -76,12 +76,12 @@ class Color(commands.Cog):
 
         try:
             swatches = Swatches(color_dict)
-            swatches.send(interaction)
+            await swatches.send(interaction)
         except Exception as e:
             await interaction.followup.send(f"Error: {e}")
             return
 
-        msg = await interaction.followup.send("")
+        msg = await interaction.followup.send("Swatches sent.")
         await msg.delete()
 
 
