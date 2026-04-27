@@ -77,6 +77,8 @@ class Color(commands.Cog):
         try:
             swatches = Swatches(color_dict)
             await swatches.send(interaction)
+            await interaction.channel.send(
+                "Use '/color set' to set your color")
         except Exception as e:
             await interaction.followup.send(f"Error: {e}")
             return
