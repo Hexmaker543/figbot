@@ -4,6 +4,7 @@ from discord.ext import commands
 
 import webcolors
 
+from utils.swatches import Swatches
 from config import COLOR_UNDER_ROLE
 from utils.role import (
         remove_color_roles,
@@ -65,7 +66,7 @@ class Color(commands.Cog):
         description="List all available colors")
     @app_commands.default_permissions(administrator=True)
     @app_commands.guild_only
-    async def list_colors(interaction:discord.Interaction):
+    async def list_colors(self, interaction:discord.Interaction):
 
         await interaction.response.defer(ephemeral=True)
 

@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 
+import os
+
 from credentials import TOKEN
 
 
@@ -17,8 +19,7 @@ class Bot(commands.Bot):
 
     async def setup_hook(self):
 
-        await self.load_extension("cogs.role")
-        await self.load_extension("cogs.color")
+        await self.load_extensions()
 
         command_count = len(await self.tree.sync())
         suffix = 's' if command_count == 1 else ''
@@ -29,6 +30,11 @@ class Bot(commands.Bot):
 
     async def on_message(self, message):
         pass
+
+    async def load_extensions(self):
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py') and not filename.startswith('_'):
+                await bot.load_extension(f"cogs.{filename[:-3]}")
 
 
 bot = Bot()

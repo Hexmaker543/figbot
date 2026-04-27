@@ -1,5 +1,4 @@
 import discord
-
 import webcolors
 from typing import Literal
 
