@@ -11,6 +11,10 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
+CORE_EXTENSIONS = [
+    "cogs._update",
+]
+
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -19,7 +23,8 @@ class Bot(commands.Bot):
 
     async def setup_hook(self):
 
-        await self._load_extensions()
+        await self._load_core_extensions()
+        await self.load_custom_extensions()
 
         command_count = len(await self.tree.sync())
         suffix = 's' if command_count == 1 else ''
@@ -31,10 +36,17 @@ class Bot(commands.Bot):
     async def on_message(self, message):
         pass
 
-    async def _load_extensions(self):
+    async def load_custom_extensions(self):
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py') and not filename.startswith('_'):
-                await bot.load_extension(f"cogs.{filename[:-3]}")
+                try:
+                    await self.reload_extension(f'cogs.{filename[:-3]}')
+                except commands.ExtensionNotLoaded:
+                    await self.load_extension(f"cogs.{filename[:-3]}")
+
+    async def _load_core_extensions(self):
+        for extension in CORE_EXTENSIONS:
+            await self.load_extension(extension)
 
 
 bot = Bot()
