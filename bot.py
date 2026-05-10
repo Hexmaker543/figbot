@@ -11,9 +11,7 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-CORE_EXTENSIONS = [
-    "cogs._update",
-]
+CORE_EXTENSIONS = ["cogs._update"]
 
 class Bot(commands.Bot):
     def __init__(self):
