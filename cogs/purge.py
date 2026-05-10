@@ -5,7 +5,7 @@ from discord.ext import commands
 
 
 class Purge(commands.Cog):
-    def __init__(self, bot: discord.Bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     # Purge command
