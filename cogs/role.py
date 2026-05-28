@@ -95,5 +95,5 @@ class Role(commands.Cog):
     #     pass
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Role(bot))
