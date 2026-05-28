@@ -46,6 +46,5 @@ class Bot(commands.Bot):
         for extension in CORE_EXTENSIONS:
             await self.load_extension(extension)
 
-
 bot = Bot()
 bot.run(TOKEN)
