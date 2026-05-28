@@ -48,6 +48,7 @@ class ReminderLayout(discord.ui.LayoutView):
                 custom_id='submit_reminder',
                 style=discord.ButtonStyle.success,
                 label='Set Reminder'))
+        self.submit_button.callback = self.on_submit
 
         self.absolute_inputs = discord.ui.ActionRow(
             discord.ui.TextInput(
@@ -115,6 +116,12 @@ class ReminderLayout(discord.ui.LayoutView):
         else: 
             return
         self.add_item(self.submit_button)
+
+        await interaction.repsonse.defer()
+        await interaction.edit_original_response(view=self)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        pass
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Reminder(bot))
