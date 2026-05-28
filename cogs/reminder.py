@@ -40,5 +40,18 @@ class ReminderLayout(discord.ui.LayoutView):
             discord.ui.TextDisplay('Remind me '),
             discord.ui.ActionRow(self.time_type))
 
+    async def on_time_type_change(self):
+        items_to_remove = [item
+                           for item in self.container.children[2:]]
+        for item in items_to_remove:
+            self.container.remove_item(item)
+
+        if self.time_type.values[0] == 'on':
+            # Absolute
+            pass
+        else:
+            # Relative
+            pass
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Reminder(bot))
