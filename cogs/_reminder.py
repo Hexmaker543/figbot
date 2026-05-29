@@ -31,7 +31,7 @@ class Reminder(commands.Cog):
                 description="Set a reminder")
         @app_commands.guild_only
         async def reminder_set(interaction: discord.Interaction):
-            await interaction.response.send_modal(SetView())
+            await interaction.response.send_message(view=SetView())
 
     def init_delete_command(self):
         @self.reminder.command(
@@ -39,7 +39,7 @@ class Reminder(commands.Cog):
             description="Delete one or more reminders")
         @app_commands.guild_only
         async def reminder_delete(interaction: discord.Interaction):
-            await interaction.response.send_modal(DeleteView())
+            await interaction.response.send_message(view=DeleteView())
 
     def init_list_command(self):
         @self.reminder.command(
@@ -47,10 +47,40 @@ class Reminder(commands.Cog):
             description="List your reminders")
         @app_commands.guild_only
         async def reminder_list(interaction: discord.Interaction):
-            await interaction.response.send_modal(ListView())
+            await interaction.response.send_message(view=ListView())
 
 class SetView(discord.ui.View):
-    pass
+    def __init_(self):
+        self.init_name()
+        self.init_desc()
+        self.init_time_type()
+        self.init_absolute()
+        self.init_relative()
+        self.init_submit_button()
+
+    def init_name(self):
+        pass
+
+    def init_desc(self):
+        pass
+
+    def init_time_type(self):
+        pass
+
+    def init_absolute(self):
+        pass
+
+    def init_relative(self):
+        pass
+
+    def init_submit_button(self):
+        pass
+
+    async def on_time_type_change(self, interaction: discord.Interaction):
+        pass
+
+    async def on_submit(self, interaction: discord.Interaction):
+        pass
 
 class DeleteView(discord.ui.View):
     pass
