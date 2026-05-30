@@ -1,8 +1,9 @@
+from datetime import date, datetime
+from typing import Literal
+
 import discord
 from discord import app_commands
 from discord.ext import commands
-
-from datetime import datetime
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
@@ -65,27 +66,29 @@ class SetView(discord.ui.LayoutView):
 
         self.original_interaction = interaction
 
-        current_time = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
-        self.DEFAULT_REMINDER_NAME = f'Reminder {current_time}'
+        self.current_time = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
+        self.DEFAULT_REMINDER_NAME = f'Reminder {self.current_time}'
         self.DEFAULT_REMINDER_DESC = None
 
         self.reminder_name = self.DEFAULT_REMINDER_NAME
         self.reminder_desc = self.DEFAULT_REMINDER_DESC
 
-        self.fluid_fields = {}
-        self.datetime_string = None
-        self.datetime_parser_error = None
-        self.relativedelta_error = None
-        self.relativedelta_string = None
-        self.time_type = None
-        self.reminder_datetime = None
-        self.reminder_repeats = None
+        self._reset_datetime()
+        self.time_type: Literal['absolute', 'relative', None] = None
+        self.reminder_repeats: Literal[
+            None,
+            'by minutes',
+            'by hours',
+            'by days',
+            'by weeks',
+            'by months',
+            'by years'] = None
         self.is_disabled = {'absolute' : False, 'relative' : False}
 
-        self.container = discord.ui.Container()
         self._build_ui()
 
     def _build_ui(self):
+        self.container = discord.ui.Container()
         self.container.add_item(discord.ui.TextDisplay(
             "# Set a Reminder"))
         self.container.add_item(discord.ui.Separator(
@@ -104,11 +107,18 @@ class SetView(discord.ui.LayoutView):
         self._build_ui()
         await self.original_interaction.edit_original_response(view=self)
 
+    def _reset_datetime(self):
+        self.datetime_parser_error = None
+        self.datetime_string = None
+        self.reminder_datetime = None
+        self.relativedelta_error = None
+        self.relativedelta_string = None
+
     def _add_name_and_desc(self):
         self.container.add_item(discord.ui.TextDisplay(
             "### Set a name and description (Optional)."))
 
-        def update_name_or_desc(input: str, type: str):
+        def update_name_or_desc(input: str, type: Literal['name', 'desc']):
             if input:
                 if type == 'name': self.reminder_name = input
                 if type == 'desc': self.reminder_desc = input
@@ -199,8 +209,17 @@ class SetView(discord.ui.LayoutView):
             try: self.reminder_datetime = parser.parse(user_datetime)
             except (parser.ParserError, ValueError, TypeError) as e:
                 self.datetime_parser_error = f'{e}'
+            if not isinstance(self.reminder_datetime, datetime):
+                self.datetime_parser_error = (
+                    f"You really thought '{user_datetime}' was gonna work?\n"+
+                    "Try to match the syntax you see in the form.")
+                await self._refresh_display()
+                self._reset_datetime()
+                return
             self.datetime_string = self.reminder_datetime.strftime(
                 "%A, %B %d, %Y at %I:%M %p")
+            self.relativedelta_string = relativedelta(
+                self.datetime_string, self.current_time)
             await self._refresh_display()
 
         datetime_button = discord.ui.Button(label='Set Date and Time')
@@ -208,45 +227,42 @@ class SetView(discord.ui.LayoutView):
         self.container.add_item(discord.ui.ActionRow(datetime_button))
 
         if self.datetime_string:
-            self.container.add_item(discord.ui.TextDisplay(self.datetime_string))
+            self.container.add_item(discord.ui.TextDisplay(
+                f'**Absolute:** {self.datetime_string}\n'+
+                f'*In ({self.relativedelta_string})*'))
 
         if self.datetime_parser_error:
             self.container.add_item(discord.ui.TextDisplay(
                 self.datetime_parser_error))
-            self.datetime_parser_error = None
+            self._reset_datetime()
 
     def _add_relative_input(self):
         if self.time_type != 'relative': return
 
-        modal = discord.ui.Modal(title="Set Reminder Time")
+        modal = discord.ui.Modal(title="Set Timer")
 
         months_input = discord.ui.TextInput(
             label="Months",
             placeholder="0",
-            default = "0",
             required=False,
             max_length=2)
         weeks_input = discord.ui.TextInput(
             label="Weeks", placeholder="0",
-            default = "0",
             required=False,
             max_length=2)
         days_input = discord.ui.TextInput(
             label="Days",
             placeholder="0",
-            default = "0",
             required=False,
             max_length=3)
         hours_input = discord.ui.TextInput(
             label="Hours",
             placeholder="0",
-            default = "0",
             required=False,
             max_length=3)
         minutes_input = discord.ui.TextInput(
             label="Minutes",
             placeholder="0",
-            default = "0",
             required=False,
             max_length=3)
 
@@ -259,42 +275,44 @@ class SetView(discord.ui.LayoutView):
         async def on_submit(interaction: discord.Interaction):
             try:
                 self.relativedelta_string = (
-                    f'{int(months_input.value)} months, '+
-                    f'{int(weeks_input.value)} weeks, '+
-                    f'{int(days_input.value)} days, '+
-                    f'{int(hours_input.value)} hours, '+
-                    f'and {int(minutes_input.value)} minutes')
+                    f'{int(months_input.value or 0)} months, '+
+                    f'{int(weeks_input.value or 0)} weeks, '+
+                    f'{int(days_input.value or 0)} days, '+
+                    f'{int(hours_input.value or 0)} hours, '+
+                    f'and {int(minutes_input.value or 0)} minutes')
 
                 delta = relativedelta(
-                    months=int(months_input.value),
-                    weeks=int(weeks_input.value),
-                    days=int(days_input.value),
-                    hours=int(hours_input.value),
-                    minutes=int(minutes_input.value))
+                    months=int(months_input.value or 0),
+                    weeks=int(weeks_input.value or 0),
+                    days=int(days_input.value or 0),
+                    hours=int(hours_input.value or 0),
+                    minutes=int(minutes_input.value or 0))
+
                 self.reminder_datetime = datetime.now() + delta
+                self.datetime_string = self.reminder_datetime.strftime(
+                    "%A, %B %d, %Y at %I:%M %p")
             except (ValueError, TypeError) as e:
                 self.relativedelta_error = f'{e}'
-            await self._refresh_display()
             await send_temporary_message(interaction)
+            await self._refresh_display()
 
         async def on_timer_button(interaction: discord.Interaction):
             modal.on_submit = on_submit
             await interaction.response.send_modal(modal)
 
         timer_button = discord.ui.Button(label='Set Timer')
-
         timer_button.callback = on_timer_button
-        self.container.add_item(timer_button)
+        self.container.add_item(discord.ui.ActionRow(timer_button))
 
         if self.relativedelta_string:
             self.container.add_item(discord.ui.TextDisplay(
-                f'I will remind you in {self.relativedelta_string}.\n'+
-                f'({self.datetime_string})'))
+                f'**Relative:** {self.relativedelta_string}\n'+
+                f'*(On {self.datetime_string})*'))
 
         if self.relativedelta_error:
             self.container.add_item(discord.ui.TextDisplay(
                 self.relativedelta_error))
-            self.relativedelta_error = None
+            self._reset_datetime()
 
         self.container.add_item(discord.ui.Separator(
             spacing=discord.SeparatorSpacing.large))
