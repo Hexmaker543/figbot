@@ -1,3 +1,4 @@
+from re import search
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -63,13 +64,14 @@ class SetView(discord.ui.LayoutView):
 
         self.original_interaction = interaction
 
-        current_time = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        self.DEFAULT_REMINDER_NAME = f'reminder_{current_time}'
+        current_time = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
+        self.DEFAULT_REMINDER_NAME = f'Reminder {current_time}'
         self.DEFAULT_REMINDER_DESC = 'No description'
 
         self.reminder_name = self.DEFAULT_REMINDER_NAME
         self.reminder_desc = self.DEFAULT_REMINDER_DESC
 
+        self.fluid_fields = {}
         self.time_type = None
         self.reminder_datetime = None
         self.reminder_repeats = None
@@ -89,45 +91,27 @@ class SetView(discord.ui.LayoutView):
         self._add_submit_button()
         self.add_item(self.container)
 
+    async def _refresh_display(self):
+        self.container = discord.ui.Container()
+        self.clear_items()
+        self._build_ui()
+        await self.original_interaction.edit_original_response(view=self)
+
     def _add_name_and_desc(self):
         self.container.add_item(discord.ui.TextDisplay(
             "### Set a name and description (Optional)."))
 
-        has_custom = {'name' : False, 'desc' : False}
         def add_text_displays():
-            if has_custom['name']:
-                self.container.add_item(discord.ui.TextDisplay(
-                    content=f'**Name:** {self.reminder_name}'))
-            if has_custom['desc']:
-                self.container.add_item(discord.ui.TextDisplay(
-                    content=f'**Description:** {self.reminder_desc}'))
-
-        async def refresh_display():
-            for item in list(self.container.children[4:6]):
-                if hasattr(item, 'content') and ('**Name:**' in item.content
-                or '**Description:**' in item.content):
-                    self.container.remove_item(item)
-
-            items_to_keep = [
-                item
-                for item in self.container.children[4:]]
-            for item in items_to_keep:
-                self.container.remove_item(item)
-
-            add_text_displays()
-
-            for item in items_to_keep:
-                self.container.add_item(item)
-
-            await self.original_interaction.edit_original_response(view=self)
+            self.container.add_item(discord.ui.TextDisplay(
+                content=f'**Name:** {self.reminder_name}'))
+            self.container.add_item(discord.ui.TextDisplay(
+                content=f'**Description:** {self.reminder_desc}'))
 
         def update_name_or_desc(input: str, type: str):
             if input:
-                has_custom[type] = True
                 if type == 'name': self.reminder_name = input
                 if type == 'desc': self.reminder_desc = input
             else:
-                has_custom[type] = False
                 if type == 'name':
                     self.reminder_name = self.DEFAULT_REMINDER_NAME
                 if type == 'desc':
@@ -141,7 +125,7 @@ class SetView(discord.ui.LayoutView):
                 placeholder='(16 Character Limit)',
                 max_length=16)
             update_name_or_desc(name, 'name')
-            await refresh_display()
+            await self._refresh_display()
 
         async def on_desc_button(interaction: discord.Interaction):
             desc = await get_text_from_modal(
@@ -152,7 +136,7 @@ class SetView(discord.ui.LayoutView):
                 max_length=200,
                 style=discord.TextStyle.long)
             update_name_or_desc(desc, 'desc')
-            await refresh_display()
+            await self._refresh_display()
 
         name_button = discord.ui.Button(label='Set Name')
         desc_button = discord.ui.Button(label='Set Description')
@@ -173,17 +157,24 @@ class SetView(discord.ui.LayoutView):
         absolute_button = discord.ui.Button(label='absolute')
         relative_button = discord.ui.Button(label='relative')
 
-        def set_absolute():
+        async def set_absolute(interaction):
             self.time_type = 'absolute'
             absolute_button.disabled = True
             relative_button.disabled = False
-        def set_relative():
+            await self._refresh_display()
+        async def set_relative(interaction):
             self.time_type = 'relative'
             relative_button.disabled = True
             absolute_button.disabled = False
+            await self._refresh_display()
+
 
         absolute_button.callback = set_absolute
         relative_button.callback = set_relative
+
+        self.container.add_item(discord.ui.ActionRow(
+            absolute_button,
+            relative_button))
 
     def _add_absolute_input(self):
         if self.time_type != 'absolute': return
