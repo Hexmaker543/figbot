@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from datetime import datetime
 
-from utils.message import send_temporary_message
+from utils.ui import get_text_from_modal
 
 
 class Reminder(commands.Cog):
@@ -87,16 +87,19 @@ class SetView(discord.ui.LayoutView):
         self.add_item(self.container)
 
     def _add_name_and_desc(self):
-        button_pressed = {'name' : False, 'desc' : False}
+        self.container.add_item(discord.ui.TextDisplay(
+            "Set a name and description (Optional)."))
+
+        has_custom = {'name' : False, 'desc' : False}
         def add_text_displays():
-            if button_pressed['name']:
+            if has_custom['name']:
                 self.container.add_item(discord.ui.TextDisplay(
                     content=f'**Name:** {self.reminder_name}'))
-            if button_pressed['desc']:
+            if has_custom['desc']:
                 self.container.add_item(discord.ui.TextDisplay(
                     content=f'**Description:** {self.reminder_desc}'))
 
-        async def refresh_container():
+        async def refresh_display():
             items_to_keep = [item
                 for item in self.container.children[5:]]
             items_to_remove = [item
@@ -110,68 +113,58 @@ class SetView(discord.ui.LayoutView):
 
             await self.original_interaction.edit_original_response(view=self)
 
-        async def update_name_or_desc(text_input: discord.TextInput, type: str):
-            if text_input.value:
-                button_pressed[type] = True
-                if type == 'name': self.reminder_name = text_input.value
-                if type == 'desc': self.reminder_desc = text_input.value
+        def update_name_or_desc(input: str, type: str):
+            if input:
+                has_custom[type] = True
+                if type == 'name': self.reminder_name = input
+                if type == 'desc': self.reminder_desc = input
             else:
-                button_pressed[type] = False
+                has_custom[type] = False
                 if type == 'name':
                     self.reminder_name = self.DEFAULT_REMINDER_NAME
                 if type == 'desc':
                     self.reminder_desc = self.DEFAULT_REMINDER_DESC
-            await refresh_container()
 
-
-        async def on_set_name(interaction: discord.Interaction):
-            text_prompt = discord.ui.Modal(title='Set Reminder Name')
-
-            text_input = discord.ui.TextInput(
-                label='3-16 Characters. This is optional.',
-                placeholder='Reminder Name',
-                required=False,
-                min_length=3,
+        async def on_name_button(interaction: discord.Interaction):
+            name = await get_text_from_modal(
+                interaction,
+                title='Set Reminder Name',
+                label='Give your reminder a name (Optional).',
+                placeholder='(16 Character Limit)',
                 max_length=16)
-            text_prompt.add_item(text_input)
+            update_name_or_desc(name, 'name')
+            await refresh_display()
 
-            async def on_submit(interaction: discord.Interaction):
-                await update_name_or_desc(text_input, 'name')
-                await send_temporary_message(interaction)
-            text_prompt.on_submit = on_submit
-
-            await interaction.response.send_modal(text_prompt)
-
-        async def on_set_desc(interaction: discord.Interaction):
-            text_prompt = discord.ui.Modal(title='Set Description')
-
-            text_input = discord.ui.TextInput(
-                label='200 Character Limit. This is optional.',
-                placeholder='Short description',
-                style=discord.TextStyle.long,
-                required=False,
-                max_length=200)
-            text_prompt.add_item(text_input)
-
-            async def on_submit(interaction: discord.Interaction):
-                await update_name_or_desc(text_input, 'desc')
-                await send_temporary_message(interaction)
-            text_prompt.on_submit = on_submit
-
-            await interaction.response.send_modal(text_prompt)
+        async def on_desc_button(interaction: discord.Interaction):
+            desc = await get_text_from_modal(
+                interaction,
+                title='Set Description',
+                label='Enter a short description (Optional).',
+                placeholder='(200 Character Limit)',
+                max_length=200,
+                style=discord.TextStyle.long)
+            update_name_or_desc(desc, 'desc')
+            await refresh_display()
 
         name_button = discord.ui.Button(label='Set Name')
         desc_button = discord.ui.Button(label='Set Description')
-        name_button.callback = on_set_name
-        desc_button.callback = on_set_desc
+        name_button.callback = on_name_button
+        desc_button.callback = on_desc_button
 
-        self.container.add_item(discord.ui.TextDisplay(
-            "Set a name and description (Optional)."))
         self.container.add_item(discord.ui.ActionRow(name_button, desc_button))
         add_text_displays()
 
     def _add_time_select(self):
-        pass
+        self.container.add_item(discord.ui.TextDisplay(
+            "What type of reminder would you like to set?\n\n" +
+            "__Absolute:__ January 1st, 2003 at 08:00 AM\n\n" +
+            "__Relative:__ In 2 days, 3 hours, and 5 minutes."))
+
+        absolute_button = discord.ui.Button(label='absolute')
+        relative_button = discord.ui.Button(label='relative')
+
+        absolute_button.callback = lambda self: self.time_type = 'absolute'
+        relative_button.callback = lambda self: self.time_type = 'relative'
 
     def _add_absolute_input(self):
         pass
