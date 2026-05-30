@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from utils.ui import get_text_from_modal
 
@@ -78,9 +79,11 @@ class SetView(discord.ui.LayoutView):
 
     def _build_ui(self):
         self.container.add_item(discord.ui.TextDisplay(
-            "# __Set a Reminder__"))
+            "# Set a Reminder"))
+        self.container.add_item(discord.ui.Separator(
+            spacing=discord.SeparatorSpacing.large))
         self._add_name_and_desc()
-        self._add_time_select()
+        self._add_time_buttons()
         self._add_absolute_input()
         self._add_relative_input()
         self._add_submit_button()
@@ -88,7 +91,7 @@ class SetView(discord.ui.LayoutView):
 
     def _add_name_and_desc(self):
         self.container.add_item(discord.ui.TextDisplay(
-            "Set a name and description (Optional)."))
+            "### Set a name and description (Optional)."))
 
         has_custom = {'name' : False, 'desc' : False}
         def add_text_displays():
@@ -100,16 +103,21 @@ class SetView(discord.ui.LayoutView):
                     content=f'**Description:** {self.reminder_desc}'))
 
         async def refresh_display():
-            items_to_keep = [item
-                for item in self.container.children[5:]]
-            items_to_remove = [item
-                for item in self.container.children[3:]]
+            for item in list(self.container.children[4:6]):
+                if hasattr(item, 'content') and ('**Name:**' in item.content
+                or '**Description:**' in item.content):
+                    self.container.remove_item(item)
 
-            for item in items_to_remove:
-                self.container.remove_item(item=item)
-            add_text_displays()
+            items_to_keep = [
+                item
+                for item in self.container.children[4:]]
             for item in items_to_keep:
-                self.container.add_item(item=item)
+                self.container.remove_item(item)
+
+            add_text_displays()
+
+            for item in items_to_keep:
+                self.container.add_item(item)
 
             await self.original_interaction.edit_original_response(view=self)
 
@@ -153,24 +161,39 @@ class SetView(discord.ui.LayoutView):
 
         self.container.add_item(discord.ui.ActionRow(name_button, desc_button))
         add_text_displays()
+        self.container.add_item(discord.ui.Separator(
+            spacing=discord.SeparatorSpacing.large))
 
-    def _add_time_select(self):
+    def _add_time_buttons(self):
         self.container.add_item(discord.ui.TextDisplay(
-            "What type of reminder would you like to set?\n\n" +
+            "### What type of reminder would you like to set?\n\n" +
             "__Absolute:__ January 1st, 2003 at 08:00 AM\n\n" +
             "__Relative:__ In 2 days, 3 hours, and 5 minutes."))
 
         absolute_button = discord.ui.Button(label='absolute')
         relative_button = discord.ui.Button(label='relative')
 
-        absolute_button.callback = lambda self: self.time_type = 'absolute'
-        relative_button.callback = lambda self: self.time_type = 'relative'
+        def set_absolute():
+            self.time_type = 'absolute'
+            absolute_button.disabled = True
+            relative_button.disabled = False
+        def set_relative():
+            self.time_type = 'relative'
+            relative_button.disabled = True
+            absolute_button.disabled = False
+
+        absolute_button.callback = set_absolute
+        relative_button.callback = set_relative
 
     def _add_absolute_input(self):
-        pass
+        if self.time_type != 'absolute': return
+
+        self.container.add_item(discord.ui.TextDisplay("Absolute time type"))
 
     def _add_relative_input(self):
-        pass
+        if self.time_type != 'relative': return
+
+        self.container.add_item(discord.ui.TextDisplay("Relative time type"))
 
     def _add_submit_button(self):
         pass
