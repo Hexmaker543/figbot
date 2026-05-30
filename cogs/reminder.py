@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal
 
 import discord
@@ -75,14 +75,8 @@ class SetView(discord.ui.LayoutView):
 
         self._reset_datetime()
         self.time_type: Literal['absolute', 'relative', None] = None
-        self.reminder_repeats: Literal[
-            None,
-            'by minutes',
-            'by hours',
-            'by days',
-            'by weeks',
-            'by months',
-            'by years'] = None
+        self.repeat_interval: dict[str:int] | dict[str:str] | None = None
+        self.repeater_error = None
         self.is_disabled = {'absolute' : False, 'relative' : False}
 
         self._build_ui()
@@ -97,8 +91,7 @@ class SetView(discord.ui.LayoutView):
         self._add_time_buttons()
         self._add_absolute_input()
         self._add_relative_input()
-        self._add_recurring_reminder()
-        self._add_submit_button()
+        self._add_reminder_repeater()
         self.add_item(self.container)
 
     async def _refresh_display(self):
@@ -164,10 +157,11 @@ class SetView(discord.ui.LayoutView):
             spacing=discord.SeparatorSpacing.large))
 
     def _add_time_buttons(self):
+        self.container.add_item(discord.ui.TextDisplay(
+            "### What type of reminder would you like to set?"))
         if not any(self.is_disabled.values()):
             self.container.add_item(discord.ui.TextDisplay(
-                "### What type of reminder would you like to set?\n\n" +
-                "__Absolute:__ January 1st, 2003 at 08:00 AM\n\n" +
+                "\n\n__Absolute:__ January 1st, 2003 at 08:00 AM\n\n" +
                 "__Relative:__ In 2 days, 3 hours, and 5 minutes."))
 
         absolute_button = discord.ui.Button(label='Absolute')
@@ -318,11 +312,97 @@ class SetView(discord.ui.LayoutView):
         self.container.add_item(discord.ui.Separator(
             spacing=discord.SeparatorSpacing.large))
 
-    def _add_recurring_reminder(self):
-        # if any(self.time_type):
-        pass
+    def _add_reminder_repeater(self):
+        if not self.reminder_datetime: return
 
-    def _add_submit_button(self):
+        self.container.add_item(discord.ui.TextDisplay(
+            "### How would you like this reminder?\n"+
+            "• **Enable Repeater** — Remind me regularly\n"+
+            "• **Set Reminder** — One-time reminder"))
+
+        repeater_modal = discord.ui.Modal(title='Setup a Repeating Reminder')
+        repeater_modal.add_item(discord.ui.TextDisplay("Repeat Every:"))
+        years_input = discord.ui.Label(
+            text='Years',
+            component=discord.ui.TextInput(
+                placeholder="0",
+                required=False,
+                max_length=1))
+        months_input = discord.ui.Label(
+            text='Months',
+            component=discord.ui.TextInput(
+                placeholder="0",
+                required=False,
+                max_length=2))
+        weeks_input = discord.ui.Label(
+            text='Weeks',
+            component=discord.ui.TextInput(
+                placeholder="0",
+                required=False,
+                max_length=2))
+        days_input = discord.ui.Label(
+            text='Days',
+            component=discord.ui.TextInput(
+                placeholder="0",
+                required=False,
+                max_length=3))
+        hours_input = discord.ui.Label(
+            text='Hours',
+            component=discord.ui.TextInput(
+                placeholder="0",
+                required=False,
+                max_length=3))
+        minutes_input = discord.ui.Label(
+            text='Minutes',
+            component=discord.ui.TextInput(
+                placeholder="0",
+                required=False,
+                max_length=4))
+        repeats_input = discord.ui.Label(
+            text="Times to Repeat:",
+            description="Type in how many times you want the reminder to " +
+                "repeat, or type 'Forever' to make it indefinite.",
+            component=discord.ui.TextInput(
+                placeholder="'Forever' | (0-9)",
+                max_length=4))
+
+        async def on_submit(interaction: discord.Interaction):
+            try:
+                years = int(years_input.component.value or 0)
+                months = int(months_input.component.value or 0)
+                weeks = int(weeks_input.component.value or 0)
+                days = int(days_input.component.value or 0)
+                hours = int(hours_input.component.value or 0)
+                minutes = int(minutes_input.component.value or 0)
+                repeats = None
+
+                if str(repeats_input.component.value).lower == 'forever':
+                    self.repeat_interval['duration'] = 'forever'
+                else:
+                    repeats = int(repeats_input.component.value or 0)
+
+                self.repeat_interval['years'] = years
+                self.repeat_interval['months'] = months
+                self.repeat_interval['weeks'] = weeks
+                self.repeat_interval['days'] = days
+                self.repeat_interval['hours'] = hours
+                self.repeat_interval['minutes'] = minutes
+
+            except (ValueError, TypeError) as e:
+                self.repeater_error = f'{e}'
+                await send_temporary_message(interaction)
+
+        async def on_repeater_button(interaction: discord.Interaction):
+            repeater_modal.on_submit = on_submit
+            await interaction.response.send_modal(repeater_modal)
+            self._refresh_display()
+
+        async def on_submit_button(interaction: discord.Interaction):
+            pass
+
+        repeater_button = discord.ui.Button(label='Enable Repeater')
+        submit_button = discord.ui.Button(label='Set Reminder')
+
         pass
 
 class DeleteView(discord.ui.View):

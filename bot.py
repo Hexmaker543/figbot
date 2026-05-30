@@ -3,7 +3,7 @@ from discord.ext import commands
 
 import os
 
-from credentials import TOKEN
+from -credentials import TOKEN
 
 
 intents = discord.Intents.default()
