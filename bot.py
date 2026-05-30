@@ -1,9 +1,16 @@
 import discord
 from discord.ext import commands
 
+from dotenv import load_dotenv
 import os
 
-from -credentials import TOKEN
+
+load_dotenv()
+dev_mode = True
+if dev_mode:
+    TOKEN = os.getenv('DEV_TOKEN')
+else:
+    TOKEN = os.getenv('BUILD_TOKEN')
 
 
 intents = discord.Intents.default()

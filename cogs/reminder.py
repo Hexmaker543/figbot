@@ -1,14 +1,47 @@
-from datetime import datetime
 from typing import Literal
+
+import sqlite3
+from pathlib import Path
 
 import discord
 from discord import app_commands
 from discord.ext import commands
+
+from datetime import datetime
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
 from utils.ui import get_text_from_modal
 from utils.message import send_temporary_message
+
+
+class ReminderManager:
+    def __init_(self):
+        self.database_path = '.data/figbot.db'
+
+    def get_connection(self):
+        return sqlite3.connect(self.database_path)
+
+    def add_user(self, user_id, username):
+        connection = self.get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "INSERT INTO users (user_id, username) VALUES (?, ?)",
+            (user_id, username,))
+        connection.commit()
+        connection.close()
+
+    def add_reminder( self, user_id,
+        reminder_name, reminder_desc, reminder_datetime,
+        repeat_interval):
+        connection = self.get_connection()
+        cursor = connection.cursor()
+        cursor.execute("""
+        INSERT INTO reminders (user_id, reminder_name, reminder_desc, 
+        reminder_desc, reminder_datetime, repeat_interval)
+        VALUES (?,?,?,?,?)""")
+        connection.commit()
+        connection.close()
 
 
 class Reminder(commands.Cog):
@@ -59,6 +92,7 @@ class Reminder(commands.Cog):
             await interaction.response.send_message(
                 view=ListView(interaction),
                 ephemeral=True)
+
 
 class SetView(discord.ui.LayoutView):
     def __init__(self, interaction: discord.Interaction):
@@ -405,17 +439,20 @@ class SetView(discord.ui.LayoutView):
 
         pass
 
+
 class DeleteView(discord.ui.View):
     def __init__(self, interaction: discord.Interaction):
         super().__init__()
 
         self.original_interaction = interaction
 
+
 class ListView(discord.ui.View):
     def __init__(self, interaction: discord.Interaction):
         super().__init__()
 
         self.original_interaction = interaction
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Reminder(bot))
