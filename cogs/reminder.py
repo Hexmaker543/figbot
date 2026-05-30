@@ -164,10 +164,11 @@ class SetView(discord.ui.LayoutView):
             spacing=discord.SeparatorSpacing.large))
 
     def _add_time_buttons(self):
-        self.container.add_item(discord.ui.TextDisplay(
-            "### What type of reminder would you like to set?\n\n" +
-            "__Absolute:__ January 1st, 2003 at 08:00 AM\n\n" +
-            "__Relative:__ In 2 days, 3 hours, and 5 minutes."))
+        if not any(self.is_disabled.values()):
+            self.container.add_item(discord.ui.TextDisplay(
+                "### What type of reminder would you like to set?\n\n" +
+                "__Absolute:__ January 1st, 2003 at 08:00 AM\n\n" +
+                "__Relative:__ In 2 days, 3 hours, and 5 minutes."))
 
         absolute_button = discord.ui.Button(label='Absolute')
         relative_button = discord.ui.Button(label='Relative')
