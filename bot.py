@@ -50,7 +50,7 @@ class Bot(commands.Bot):
     async def _load_core_extensions(self):
         for extension in os.listdir('./core'):
             if extension.startswith('_'): continue
-            await self.load_extension(extension)
+            await self.load_extension(f'core.{extension[:-3]}')
 
 bot = Bot()
 bot.run(TOKEN)
