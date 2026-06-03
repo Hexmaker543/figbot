@@ -18,8 +18,6 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-CORE_EXTENSIONS = ["cogs._update"]
-
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -42,15 +40,16 @@ class Bot(commands.Bot):
         pass
 
     async def load_custom_extensions(self):
-        for filename in os.listdir('./cogs'):
-            if filename.endswith('.py') and not filename.startswith('_'):
+        for extension in os.listdir('./cogs'):
+            if extension.endswith('.py') and not extension.startswith('_'):
                 try:
-                    await self.reload_extension(f'cogs.{filename[:-3]}')
+                    await self.reload_extension(f'cogs.{extension[:-3]}')
                 except commands.ExtensionNotLoaded:
-                    await self.load_extension(f"cogs.{filename[:-3]}")
+                    await self.load_extension(f"cogs.{extension[:-3]}")
 
     async def _load_core_extensions(self):
-        for extension in CORE_EXTENSIONS:
+        for extension in os.listdir('./core'):
+            if extension.startswith('_'): continue
             await self.load_extension(extension)
 
 bot = Bot()

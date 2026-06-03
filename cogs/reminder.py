@@ -16,7 +16,7 @@ from utils.message import send_temporary_message
 
 
 class ReminderManager:
-    def __init_(self):
+    def __init__(self):
         self.database_path = '.data/figbot.db'
 
     def get_connection(self):
@@ -37,11 +37,26 @@ class ReminderManager:
         connection = self.get_connection()
         cursor = connection.cursor()
         cursor.execute("""
-        INSERT INTO reminders (user_id, reminder_name, reminder_desc, 
+        INSERT INTO reminders (user_id, reminder_name, reminder_desc,
         reminder_desc, reminder_datetime, repeat_interval)
         VALUES (?,?,?,?,?)""")
         connection.commit()
         connection.close()
+
+    def get_user_reminder(self, user_id):
+        connection = self.get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT *  FROM reminders WHERE user_id = ?", (user_id,))
+        reminders = cursor.fetchall()
+        connection.close()
+        return reminders
+
+    def check_and_fire_reminders(self):
+        pass
+
+    def adjust_loop_timer(self):
+        pass
 
 
 class Reminder(commands.Cog):
