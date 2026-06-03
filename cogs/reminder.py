@@ -53,7 +53,9 @@ class ReminderManager:
         return reminders
 
     def check_and_fire_reminders(self):
-        pass
+        connection = self.get_connection()
+        cursor = connection.cursor()
+        pass # Learn sqlite you fucking asshole (you should've just used .csv)
 
     def adjust_loop_timer(self):
         pass
