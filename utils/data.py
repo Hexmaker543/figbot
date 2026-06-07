@@ -1,20 +1,17 @@
-import json, os
+import sqlite3, os
 
 
+database_path = '../.figbot.db'
 
-def _ensure_dir(): os.mkdirs('../data', exist_ok=True)
+def get_connection():
+    return sqlite3.connect(database_path)
 
-def load_data(filename: str):
-    _ensure_dir()
-    try:
-        with open(f'../data/{filename}.json', 'r') as f: data = json.load(f)
-        return data
-    except FileNotFoundError:
-        print(f"Creating new data entry: '{filename}'.")
-        return {}
-
-def save_data(filename:str, data: dict):
-    _ensure_dir()
-    with open(f'../data/{filename}.json', 'w') as f:
-        json.dump(data, f, indent=2)
-    print(f"Updated data in data entry: '{filename}'.")
+def ensure_database():
+    os.makedirs(name=database_path, exist_ok=True)
+    conn = get_connection()
+    cursor = conn.cursor()
+    with open('create_database.sql', 'r') as sql_file:
+        sql_script = sql_file.read()
+        cursor.executescript(sql_script)
+    conn.commit()
+    conn.close()

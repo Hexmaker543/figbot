@@ -1,8 +1,5 @@
 from typing import Literal
 
-import sqlite3
-from pathlib import Path
-
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -11,51 +8,47 @@ from datetime import datetime
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
+from utils.data import ensure_database, get_connection
 from utils.ui import get_text_from_modal
 from utils.message import send_temporary_message
 
 
 class ReminderManager:
     def __init__(self):
-        self.database_path = '.data/figbot.db'
+        ensure_database()
 
-    def get_connection(self):
-        return sqlite3.connect(self.database_path)
-
-    def add_user(self, user_id, username):
-        connection = self.get_connection()
-        cursor = connection.cursor()
-        cursor.execute(
-            "INSERT INTO users (user_id, username) VALUES (?, ?)",
-            (user_id, username,))
-        connection.commit()
-        connection.close()
-
-    def add_reminder( self, user_id,
-        reminder_name, reminder_desc, reminder_datetime,
-        repeat_interval):
-        connection = self.get_connection()
-        cursor = connection.cursor()
+    def save_reminder(self,
+        user_id: int,
+        name: str,
+        datetime: datetime,
+        description: str = None,
+        repeat_key: str | None = None):
+        conn = get_connection()
+        cursor = conn.cursor()
+        datetime = datetime.isoformat()
         cursor.execute("""
-        INSERT INTO reminders (user_id, reminder_name, reminder_desc,
-        reminder_desc, reminder_datetime, repeat_interval)
-        VALUES (?,?,?,?,?)""")
-        connection.commit()
-        connection.close()
+        INSERT INTO reminders (user_id, name, description, datetime, repeat_key)
+        VALUES (?,?,?,?,?)""", (user_id, name, description,
+                                datetime, repeat_key))
+        conn.commit()
+        conn.close()
 
-    def get_user_reminder(self, user_id):
-        connection = self.get_connection()
-        cursor = connection.cursor()
-        cursor.execute(
-            "SELECT *  FROM reminders WHERE user_id = ?", (user_id,))
+    def load_reminders(self,
+        user_id:int|None=None):
+        conn = get_connection()
+        cursor = conn.cursor()
+        if user_id is None: cursor.execute('SELECT * FROM reminders')
+        else:
+            cursor.execute('SELECT * FROM reminders WHERE user_id = ?',
+                           (user_id,))
         reminders = cursor.fetchall()
-        connection.close()
+        conn.close()
         return reminders
 
     def check_and_fire_reminders(self):
         connection = self.get_connection()
         cursor = connection.cursor()
-        pass # Learn sqlite you fucking asshole (you should've just used .csv)
+        pass # Learn sqlite
 
     def adjust_loop_timer(self):
         pass
@@ -126,7 +119,7 @@ class SetView(discord.ui.LayoutView):
 
         self._reset_datetime()
         self.time_type: Literal['absolute', 'relative', None] = None
-        self.repeat_interval: dict[str:int] | dict[str:str] | None = None
+        self.repeat_key: str | None = None
         self.repeater_error = None
         self.is_disabled = {'absolute' : False, 'relative' : False}
 
@@ -412,9 +405,9 @@ class SetView(discord.ui.LayoutView):
         repeats_input = discord.ui.Label(
             text="Times to Repeat:",
             description="Type in how many times you want the reminder to " +
-                "repeat, or type 'Forever' to make it indefinite.",
+                "repeat, or type '0' to make it indefinite.",
             component=discord.ui.TextInput(
-                placeholder="'Forever' | (0-9)",
+                placeholder="0",
                 max_length=4))
 
         async def on_submit(interaction: discord.Interaction):
@@ -425,19 +418,10 @@ class SetView(discord.ui.LayoutView):
                 days = int(days_input.component.value or 0)
                 hours = int(hours_input.component.value or 0)
                 minutes = int(minutes_input.component.value or 0)
-                repeats = None
+                repeats = int(repeats_input.component.value or 0)
 
-                if str(repeats_input.component.value).lower == 'forever':
-                    self.repeat_interval['duration'] = 'forever'
-                else:
-                    repeats = int(repeats_input.component.value or 0)
-
-                self.repeat_interval['years'] = years
-                self.repeat_interval['months'] = months
-                self.repeat_interval['weeks'] = weeks
-                self.repeat_interval['days'] = days
-                self.repeat_interval['hours'] = hours
-                self.repeat_interval['minutes'] = minutes
+                self.repeat_key = (f'{years},{months},{weeks},{days},' +
+                                  f'{hours},{minutes},{repeats}')
 
             except (ValueError, TypeError) as e:
                 self.repeater_error = f'{e}'

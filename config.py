@@ -12,3 +12,13 @@ SWATCH_SETTINGS = {
     "line_spacing": 1.5,
     "word_spacing": 2 # How many spaces should be printed between each word
 }
+
+DATABASE_TEMPLATE ="""
+CREATE TABLE IF NOT EXISTS reminders (
+    user_id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    datetime TEXT NOT NULL,
+    repeat_key TEXT
+);
+"""
