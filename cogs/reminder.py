@@ -9,46 +9,84 @@ from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
 from utils.data import ensure_database, get_connection
+from utils.parsers import get_comma_list
 from utils.ui import get_text_from_modal
 from utils.message import send_temporary_message
 
 
 class ReminderManager:
-    def __init__(self):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
         ensure_database()
 
     def save_reminder(self,
         user_id: int,
         name: str,
         datetime: datetime,
+        channel_id: int,
         description: str = None,
         repeat_key: str | None = None):
         conn = get_connection()
         cursor = conn.cursor()
         datetime = datetime.isoformat()
         cursor.execute("""
-        INSERT INTO reminders (user_id, name, description, datetime, repeat_key)
-        VALUES (?,?,?,?,?)""", (user_id, name, description,
-                                datetime, repeat_key))
+        INSERT INTO reminders (
+            user_id,
+            name,
+            description,
+            datetime,
+            repeat_key,
+            channel_id
+        )
+        VALUES (?,?,?,?,?,?)""", (user_id, name, description,
+                                datetime, repeat_key, channel_id))
         conn.commit()
         conn.close()
 
-    def load_reminders(self,
-        user_id:int|None=None):
+    def get_reminders(self,
+        user_id:int|None=None) -> dict:
         conn = get_connection()
         cursor = conn.cursor()
         if user_id is None: cursor.execute('SELECT * FROM reminders')
         else:
             cursor.execute('SELECT * FROM reminders WHERE user_id = ?',
                            (user_id,))
-        reminders = cursor.fetchall()
+        reminder_tuples = cursor.fetchall()
         conn.close()
+        reminders = []
+        for tup in reminder_tuples:
+            reminders.append({
+                'user_id' : tup[0],
+                'name' : tup[1],
+                'description' : tup[2],
+                'datetime' : datetime.fromisoformat(tup[3]),
+                'repeat_key' : tup[4],
+                'channel_id' : tup[5]
+            })
         return reminders
 
-    def check_and_fire_reminders(self):
-        connection = self.get_connection()
-        cursor = connection.cursor()
-        pass # Learn sqlite
+    def trigger_reminder(self, reminder:dict):
+        user_id = reminder['user_id']
+        name = reminder['name']
+        description = reminder['description']
+        datetime = reminder['datetime']
+        repeat_key = reminder['repeat_key']
+        channel_id = reminder['channel_id']
+
+        channel = self.bot.get_channel(channel_id)
+        user = self.bot.get_user(user_id)
+
+        msg = f'{user.mention} Reminder: {name}'
+        if description: msg += f' - {description}'
+
+        channel.send(f'{user.mention} Reminder: {name}')
+
+    def check_reminders(self):
+        reminders = self.get_reminders()
+        for reminder in reminders:
+            reminder_datetime = datetime.fromisoformat(reminder['datetime'])
+            if reminder_datetime >= datetime.now:
+                self.trigger_reminder(reminder)
 
     def adjust_loop_timer(self):
         pass
@@ -80,7 +118,7 @@ class Reminder(commands.Cog):
         @app_commands.guild_only
         async def reminder_set(interaction: discord.Interaction):
             await interaction.response.send_message(
-                view=SetView(interaction),
+                view=SetView(interaction, self.bot),
                 ephemeral=True)
 
     def init_delete_command(self):
@@ -105,10 +143,12 @@ class Reminder(commands.Cog):
 
 
 class SetView(discord.ui.LayoutView):
-    def __init__(self, interaction: discord.Interaction):
+    def __init__(self, interaction: discord.Interaction, bot: commands.Bot):
         super().__init__()
 
         self.original_interaction = interaction
+
+        self.reminder_manager = ReminderManager(bot)
 
         self.current_time = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
         self.DEFAULT_REMINDER_NAME = f'Reminder {self.current_time}'
@@ -364,6 +404,7 @@ class SetView(discord.ui.LayoutView):
             "• **Enable Repeater** — Remind me regularly\n"+
             "• **Set Reminder** — One-time reminder"))
 
+        # Repeat Modal
         repeater_modal = discord.ui.Modal(title='Setup a Repeating Reminder')
         repeater_modal.add_item(discord.ui.TextDisplay("Repeat Every:"))
         years_input = discord.ui.Label(
@@ -432,13 +473,84 @@ class SetView(discord.ui.LayoutView):
             await interaction.response.send_modal(repeater_modal)
             self._refresh_display()
 
+
+        def get_keys():
+            keys = get_comma_list(self.repeat_key)
+            keys_dict = {
+                'years' : keys[0],
+                'months' : keys[1],
+                'weeks' : keys[2],
+                'days' : keys[3],
+                'hours' : keys[4],
+                'minutes' : keys[5],
+                'repeats' : keys[6]
+            }
+            return keys_dict
+
+        # Submit Modal
+        submit_modal = discord.ui.Modal(title='Set Reminder')
+        submit_modal.add_item(
+            discord.ui.TextDisplay("Please Review Your Reminder")
+        )
+
+        submit_modal.add_item(
+            discord.ui.TextDisplay(f"Name: {self.reminder_name}")
+        )
+        submit_modal.add_item(
+            discord.ui.TextDisplay(f"Description: {self.reminder_desc}")
+        )
+        submit_modal.add_item(
+            discord.ui.TextDisplay(f"Datetime: {self.datetime_string}")
+        )
+
+        keys = get_keys()
+        submit_modal.add_item(
+            discord.ui.TextDisplay(
+f"""Repeats every:
+Years: {keys['years']}
+Months: {keys['months']}
+Weeks: {keys['weeks']}
+Days:  {keys['days']}
+Hours: {keys['hours']}
+Minutes:{keys['minutes']}
+
+It will repeat {keys['repeats']} times"""))
+
+        async def on_submit(interaction: discord.Interaction):
+            interaction.response.defer(ephemeral=True)
+            try:
+                user_id = interaction.user.id
+                name = self.reminder_name
+                desc = self.reminder_desc
+                datetime = self.reminder_datetime.isoformat()
+                repeat_key = self.repeat_key
+                channel_id = interaction.channel_id
+
+                self.reminder_manager.save_reminder(
+                    user_id=user_id,
+                    name=name,
+                    datetime=datetime,
+                    channel_id=channel_id,
+                    description=desc,
+                    repeat_key=repeat_key,
+                )
+
+                send_temporary_message(interaction, 'Reminder set.', 5)
+            except Exception as e:
+                interaction.followup.send(f"Error. Please alert admins. [{e}]")
+
         async def on_submit_button(interaction: discord.Interaction):
-            pass
+            submit_modal.on_submit = on_submit
+            await interaction.response.send_modal(submit_modal)
+            self._refresh_display()
 
         repeater_button = discord.ui.Button(label='Enable Repeater')
         submit_button = discord.ui.Button(label='Set Reminder')
-
-        pass
+        repeater_button.callback = on_repeater_button()
+        submit_button.callback = on_submit_button()
+        self.container.add_item(
+            discord.ui.ActionRow(repeater_button, submit_button)
+        )
 
 
 class DeleteView(discord.ui.View):
