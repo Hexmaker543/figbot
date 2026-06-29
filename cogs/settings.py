@@ -18,18 +18,30 @@ class Settings(commands.Cog):
         @app_commands.guild_only()
         async def settings(interaction: discord.Interaction):
             interaction.response.send_message(
-                view=SettingsView(),
+                view=SettingsView(interaction),
                 ephemeral=True
             )
 
 
 class SettingsView(discord.ui.LayoutView):
-    def __init__(self):
+    def __init__(self, interaction: discord.Interaction):
         super().__init__()
+        self.user = interaction.user
+        self.original_message = interaction.message
+        self.original_channel = interaction.channel
 
         self.timezone = None
+        self._build_ui()
 
-
+    async def _build_ui(self):
+        self.container = discord.ui.Container()
+        self.add_item(
+            discord.ui.TextDisplay(
+                f"# {self.user.display_name.capitalize()}'s Settings"
+            )
+        )
+        self.add_item(discord.ui.Separator())
+        self.add_item(self.container)
 
 
 async def setup(bot: commands.Bot):
